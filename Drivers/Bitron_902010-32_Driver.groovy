@@ -140,7 +140,7 @@ def parse(String description) {
 			]
 		}
 		//After configure, some 0x0029 events with value 07122900000000 and size 14 are sent, skip them filtering on size
-        else if (descMap.cluster == "0201" && descMap.attrId == "0029" && descMap.size == "0A")
+        else if (descMap.cluster == "0201" && descMap.attrId == "0029" && descMap.size != "14")
 		{
 			displayDebugLog("RAW THERMOSTAT RELAY STATE: ${descMap.value}")		
 			def retValue = (descMap.value == "0000") ? "idle" : "heating"
