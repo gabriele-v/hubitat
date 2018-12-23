@@ -13,11 +13,13 @@
  *
  *  Bitron 902010/32 Thermostat
  *
- *  Version: 0.1b
+ *  Version: 0.2b
+ *  0.1b (2018-12-21) => First release
+ *  0.2b (2018-12-23) => Add system mode support and cooling temperature
  *
  *  Author: gabriele-v
  *
- *  Date: 2018-12-21
+ *  Date: 2018-12-23
  *
  * Sources:
  * Bitron 902010/32 Zigbee manual => https://images-eu.ssl-images-amazon.com/images/I/91ZbuTU-duS.pdf
@@ -75,7 +77,15 @@ def parse(String description) {
 		if (descMap.cluster == "0201" && descMap.attrId == "0000")
 		{
 			displayDebugLog("RAW TEMPERATURE: ${descMap.value}")
-			map = parseTemperature(descMap.value, false)
+			temp = parseTemperature(descMap.value)
+			map = [
+				name: "temperature",
+				value: temp,
+				unit: "${settings.unitformat}",
+				isStateChange: true,
+				descriptionText: "Temperature is ${temp}°${settings.unitformat}",
+				translatable:true
+			]
 		}
 		else if (descMap.cluster == "0001" && descMap.attrId == "0020")
 		{
@@ -102,10 +112,31 @@ def parse(String description) {
 		{
 			displayDebugLog("RAW TEMP CALIBRATION: ${descMap.value}")
 		}
+		else if (descMap.cluster == "0201" && descMap.attrId == "0011")
+		{
+			displayDebugLog("RAW COOLING SETPOINT: ${descMap.value}")
+			temp = parseTemperature(descMap.value)
+			map = [
+				name: "coolingSetpoint",
+				value: temp,
+				unit: "${settings.unitformat}",
+				isStateChange: true,
+				descriptionText: "Cooling set point is ${temp}°${settings.unitformat}",
+				translatable:true
+			]
+		}
 		else if (descMap.cluster == "0201" && descMap.attrId == "0012")
 		{
 			displayDebugLog("RAW HEATING SETPOINT: ${descMap.value}")
-			map = parseTemperature(descMap.value, true)
+			temp = parseTemperature(descMap.value)
+			map = [
+				name: "heatingSetpoint",
+				value: temp,
+				unit: "${settings.unitformat}",
+				isStateChange: true,
+				descriptionText: "Heating set point is ${temp}°${settings.unitformat}",
+				translatable:true
+			]
 		}
         else if (descMap.cluster == "0201" && descMap.attrId == "0029")
 		{
@@ -119,7 +150,7 @@ def parse(String description) {
 				translatable:true
 			]
 		}
-		else if (descMap.cluster == "0201" && descMap.attrId == "001c")
+		else if (descMap.cluster == "0201" && descMap.attrId == "001C")
 		{
 			displayDebugLog("RAW THERMOSTAT MODE: ${descMap.value}")
 			
@@ -247,20 +278,10 @@ private def displayInfoLog(message) {
 }
 
 // Return temperature
-def parseTemperature(value,isSetpoint) {
+def parseTemperature(value) {
 	float temp = Integer.parseInt(value, 16)/100
 	temp = (settings.unitformat == "F") ? ((temp * 1.8) + 32) : temp
 	temp = temp.round(1)
-	def retName = isSetpoint ? 'heatingSetpoint' : 'temperature'
-	def retDesc = isSetpoint ? 'Heating set point' : 'Temperature'
-	return [
-		name: retName,
-		value: temp,
-		unit: "${settings.unitformat}",
-		isStateChange: true,
-		descriptionText: "${retDesc} is ${temp}°${settings.unitformat}",
-		translatable:true
-	]
 }
 
 // Return battery status
@@ -291,6 +312,20 @@ def setHeatingSetpoint(degrees) {
 		def cmds =
 			zigbee.writeAttribute(0x201, 0x12, 0x29, zigbeeTemp) +
 			zigbee.readAttribute(0x201, 0x12)	//Read Heat Setpoint
+		return cmds
+	}
+}
+
+def setCoolingSetpoint(degrees) {
+	if (degrees != null) {
+		float fTemp = degrees; 
+		displayInfoLog("setCoolingSetpoint(${fTemp} ${temperatureScale})")
+		float celsius = (settings.unitformat == "Fahrenheit") ? (fahrenheitToCelsius(fTemp)).round(1) : fTemp.round(1)
+		sendEvent("name":"coolingSetpoint", "value":celsius)
+		int zigbeeTemp = celsius * 100;
+		def cmds =
+			zigbee.writeAttribute(0x201, 0x11, 0x29, zigbeeTemp) +
+			zigbee.readAttribute(0x201, 0x11)	//Read Cooling Setpoint
 		return cmds
 	}
 }
@@ -343,36 +378,68 @@ def decreaseHeatSetpoint()
    	}
 }
 
-def modeHeat() {
-	log.debug "modeHeat"
-	sendEvent("name":"thermostatMode", "value":"heat")
-	zigbee.writeAttribute(0x201, 0x001C, 0x30, 0x04)
+//# thermostat.setThermostatMode capability
+void setThermostatMode(mode) {
+	if (mode != null) {
+		displayInfoLog("Set thermostat mode to ${mode}")
+		def Value
+		switch(mode) {
+			case "off":
+				Value = 0x00
+				break
+			case "cool":
+				Value = 0x03
+				break
+			case "heat":
+				Value = 0x04
+				break
+			default:
+				break
+		}
+
+		if($Value)
+		{
+			sendEvent(name: 'thermostatMode', value: mode)
+			zigbee.writeAttribute(0x201, 0x001C, 0x30, Value)
+			zigbee.readAttribute(0x201, 0x001C)	//Read Mode
+		}
+		else
+		{
+			log.error("Mode ${mode} not supported")
+		}
+	}
 }
 
-def modeOff() {
-	log.debug "modeOff"
-	sendEvent("name":"thermostatMode", "value":"off")
-	zigbee.writeAttribute(0x201, 0x001C, 0x30, 0x00)
+void off() {
+	setThermostatMode('off')
 }
 
-def modeAuto() {
-	log.debug "modeAuto"
-	sendEvent("name":"thermostatMode", "value":"auto")
-	zigbee.writeAttribute(0x201, 0x001C, 0x30, 0x01)
+void heat() {
+	setThermostatMode('heat')
+}
+
+void emergencyHeat() {
+	setThermostatMode('heat')
+}
+
+void cool() {
+	setThermostatMode('cool')
 }
 
 def configure() {
 	def cmds =
 		//Cluster ID (0x0201 = Thermostat Cluster), Attribute ID, Data Type, Payload (Min report, Max report, On change trigger)
-		zigbee.configureReporting(0x0201, 0x0000, 0x29, 30, 120, 50) +  //Attribute ID 0x0000 = local temperature, Data Type: S16BIT
-		zigbee.configureReporting(0x0201, 0x0012, 0x29, 30, 120, 50) +  //Attribute ID 0x0012 = set heating temperature, Data Type: S16BIT
-        zigbee.configureReporting(0x0201, 0x0029, 0x19, 30, 60, 1) + 	//Attribute ID 0x0029 = relay status, Data Type: BIT16
-		zigbee.configureReporting(0x0201, 0x0030, 0x19, 1, 0, 1) + 	//Attribute ID 0x0030 = last change source, Data Type: ENUM-8
+		zigbee.configureReporting(0x0201, 0x0000, 0x29, 30, 60, 50) +    //Attribute ID 0x0000 = local temperature, Data Type: S16BIT
+		zigbee.configureReporting(0x0201, 0x0011, 0x29, 30, 120, 50) +   //Attribute ID 0x0011 = cooling temperature, Data Type: S16BIT
+		zigbee.configureReporting(0x0201, 0x0012, 0x29, 30, 120, 50) +   //Attribute ID 0x0012 = heating temperature, Data Type: S16BIT
+		zigbee.configureReporting(0x0201, 0x001C, 0x30, 600, 21600, 1) + //Attribute ID 0x001C = system mode, Data Type: ENUM-8
+        zigbee.configureReporting(0x0201, 0x0029, 0x19, 30, 60, 1) + 	 //Attribute ID 0x0029 = relay status, Data Type: BIT16
+		zigbee.configureReporting(0x0201, 0x0030, 0x19, 600, 21600, 1)   //Attribute ID 0x0030 = last change source, Data Type: ENUM-8
 		
 		//Cluster ID (0x0001 = Power)
 		zigbee.configureReporting(0x0001, 0x0020, 0x20, 600, 21600, 1) 	//Attribute ID 0x0020 = battery voltage, Data Type: U8BIT
 	
-	displayInfoLog("configure() --- cmds: $cmds")
+	displayInfoLog("configure() --- cmds: ${cmd}")
 	return refresh() + cmds
 }
 
@@ -384,8 +451,9 @@ def refresh() {
 		zigbee.readAttribute(0x001, 0x0020) +	//Read BatteryVoltage
 		zigbee.readAttribute(0x201, 0x0000) +	//Read LocalTemperature
 		zigbee.readAttribute(0x201, 0x0010) +	//Read LocalTemperatureCalibration
-		zigbee.readAttribute(0x201, 0x0012) +	//Read SetHeatingTemperature
-		zigbee.readAttribute(0x201, 0x001C) +	//Read SystemMode //TODO: Add option to set system mode
+		zigbee.readAttribute(0x201, 0x0011) +	//Read CoolingTemperature
+		zigbee.readAttribute(0x201, 0x0012) +	//Read HeatingTemperature
+		zigbee.readAttribute(0x201, 0x001C) +	//Read SystemMode
 	    zigbee.readAttribute(0x201, 0x0029)	+	//Read Relay Status
 		zigbee.readAttribute(0x201, 0x0030) +   //Read latest change source
 		zigbee.readAttribute(0x201, 0x0032)     //Read latest change date
