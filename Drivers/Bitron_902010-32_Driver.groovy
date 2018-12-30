@@ -13,18 +13,19 @@
  *
  *  Bitron 902010/32 Thermostat
  *
- *  Version: 0.4b
+ *  Version: 0.5b
  *  0.1b (2018-12-21) => First release
  *  0.2b (2018-12-23) => Add system mode support and cooling temperature
  *  0.3b (2018-12-23) => Skip wrong messages
  *  0.4b (2018-12-29) => Fix last change source reporting
+ *  0.5b (2018-12-30) => Cleanup events removing isStateChange: true
  *
  *  Author: gabriele-v
  *
- *  Date: 2018-12-29
+ *  Date: 2018-12-30
  *
- * Sources:
- * Bitron 902010/32 Zigbee manual => https://images-eu.ssl-images-amazon.com/images/I/91ZbuTU-duS.pdf
+ *  Sources:
+ *  Bitron 902010/32 Zigbee manual => https://images-eu.ssl-images-amazon.com/images/I/91ZbuTU-duS.pdf
  *
  */
  
@@ -84,7 +85,6 @@ def parse(String description) {
 				name: "temperature",
 				value: temp,
 				unit: "${settings.unitformat}",
-				isStateChange: true,
 				descriptionText: "Temperature is ${temp}°${settings.unitformat}",
 				translatable:true
 			]
@@ -122,7 +122,6 @@ def parse(String description) {
 				name: "coolingSetpoint",
 				value: temp,
 				unit: "${settings.unitformat}",
-				isStateChange: true,
 				descriptionText: "Cooling set point is ${temp}°${settings.unitformat}",
 				translatable:true
 			]
@@ -135,7 +134,6 @@ def parse(String description) {
 				name: "heatingSetpoint",
 				value: temp,
 				unit: "${settings.unitformat}",
-				isStateChange: true,
 				descriptionText: "Heating set point is ${temp}°${settings.unitformat}",
 				translatable:true
 			]
@@ -148,7 +146,6 @@ def parse(String description) {
 			map = [
 				name: "thermostatOperatingState",
 				value: retValue,
-				isStateChange: true,
 				descriptionText: "Thermostat is ${retValue}",
 				translatable:true
 			]
@@ -175,7 +172,6 @@ def parse(String description) {
 			map = [
 				name: "thermostatMode",
 				value: retValue,
-				isStateChange: true,
 				descriptionText: "Thermostat mode is ${retValue}",
 				translatable:true
 			]
@@ -202,7 +198,6 @@ def parse(String description) {
 			map = [
 				name: "lockMode",
 				value: retValue,
-				isStateChange: true,
 				descriptionText: "Thermostat display lock status is ${retValue}",
 				translatable:true
 			]
@@ -214,7 +209,6 @@ def parse(String description) {
 			map = [
 				name: "thermostatUnitFormat",
 				value: retValue,
-				isStateChange: true,
 				descriptionText: "Thermostat is ${retValue}",
 				translatable:true
 			]
@@ -241,7 +235,6 @@ def parse(String description) {
 			map = [
 				name: "thermostatLastChangeSource",
 				value: retValue,
-				isStateChange: true,
 				descriptionText: "Thermostat last change has been made ${retValue}",
 				translatable:true
 			]
@@ -299,7 +292,6 @@ private parseBattery(value) {
 		name: 'battery',
 		value: roundedPct,
 		unit: "%",
-		isStateChange: true,
 		descriptionText: descText
 	]
 	return result
