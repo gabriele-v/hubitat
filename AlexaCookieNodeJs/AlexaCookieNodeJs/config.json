@@ -1,0 +1,7 @@
+{
+	"port":"81",
+	"proxyPort":"82",
+	"username": "",
+	"password": "",
+	"consoleLogging": false
+}
