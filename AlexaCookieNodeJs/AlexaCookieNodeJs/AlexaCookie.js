@@ -17,6 +17,7 @@
 //    Version   Date        Who             What
 //    -------   ----        ---             ----
 //     v0.1.0   2019-01-02  Gabriele        Initial Version
+//     v0.1.1   2019-01-20  Gabriele        Update Alexa-Cookie to v2.0.1
 
 
 'use strict';

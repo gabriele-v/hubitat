@@ -46,6 +46,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.0.1
+* (Apollon77) Fix refresh problem, hopefully
+
 ### 2.0.0
 * (Apollon77) Switch Proxy approach to use device registration logic and allow refreshing of cookies. Be aware: Breaking changes in API!!
 
