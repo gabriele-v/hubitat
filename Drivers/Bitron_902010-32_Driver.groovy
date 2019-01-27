@@ -13,12 +13,13 @@
  *
  *  Bitron 902010/32 Thermostat
  *
- *  Version: 0.5b
+ *  Version: 0.6b
  *  0.1b (2018-12-21) => First release
  *  0.2b (2018-12-23) => Add system mode support and cooling temperature
  *  0.3b (2018-12-23) => Skip wrong messages
  *  0.4b (2018-12-29) => Fix last change source reporting
- *  0.5b (2018-12-30) => Cleanup events removing isStateChange: true
+ *  0.5b (2018-12-20) => Cleanup events removing isStateChange: true
+ *  0.6b (2019-01-27) => Change reporting to improve battery life
  *
  *  Author: gabriele-v
  *
@@ -424,12 +425,12 @@ void cool() {
 def configure() {
 	def cmds =
 		//Cluster ID (0x0201 = Thermostat Cluster), Attribute ID, Data Type, Payload (Min report, Max report, On change trigger)
-		zigbee.configureReporting(0x0201, 0x0000, 0x29, 30, 60, 50) +    //Attribute ID 0x0000 = local temperature, Data Type: S16BIT
-		zigbee.configureReporting(0x0201, 0x0011, 0x29, 30, 120, 50) +   //Attribute ID 0x0011 = cooling temperature, Data Type: S16BIT
-		zigbee.configureReporting(0x0201, 0x0012, 0x29, 30, 120, 50) +   //Attribute ID 0x0012 = heating temperature, Data Type: S16BIT
+		zigbee.configureReporting(0x0201, 0x0000, 0x29, 30, 300, 50) +    //Attribute ID 0x0000 = local temperature, Data Type: S16BIT
+		zigbee.configureReporting(0x0201, 0x0011, 0x29, 600, 300, 50) +   //Attribute ID 0x0011 = cooling temperature, Data Type: S16BIT
+		zigbee.configureReporting(0x0201, 0x0012, 0x29, 30, 300, 50) +   //Attribute ID 0x0012 = heating temperature, Data Type: S16BIT
 		zigbee.configureReporting(0x0201, 0x001C, 0x30, 600, 21600, 1) + //Attribute ID 0x001C = system mode, Data Type: ENUM-8
-        zigbee.configureReporting(0x0201, 0x0029, 0x19, 30, 60, 1) + 	 //Attribute ID 0x0029 = relay status, Data Type: BIT16
-		zigbee.configureReporting(0x0201, 0x0030, 0x30, 600, 120, 1)   //Attribute ID 0x0030 = last change source, Data Type: ENUM-8
+        zigbee.configureReporting(0x0201, 0x0029, 0x19, 30, 300, 1) + 	 //Attribute ID 0x0029 = relay status, Data Type: BIT16
+		zigbee.configureReporting(0x0201, 0x0030, 0x30, 30, 1800, 1)   //Attribute ID 0x0030 = last change source, Data Type: ENUM-8
 		
 		//Cluster ID (0x0001 = Power)
 		zigbee.configureReporting(0x0001, 0x0020, 0x20, 600, 21600, 1) 	//Attribute ID 0x0020 = battery voltage, Data Type: U8BIT
