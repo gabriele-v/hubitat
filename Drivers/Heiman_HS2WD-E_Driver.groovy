@@ -16,6 +16,7 @@
  *  Version: 0.2b
  *  0.1b (2019-01-26) => First release
  *  0.2b (2019-01-26) => Bugfixes and new events
+ *  0.3b (2019-02-14) => Using proper zigbee.parseDescriptionAsMap
  *
  *  Author: gabriele-v
  *
@@ -54,7 +55,7 @@ def parse(String description) {
     Map map = [:]
     
     if (description?.startsWith("read attr -")) {
-        def descMap = parseDescriptionAsMap(description)
+        def descMap = zigbee.parseDescriptionAsMap(description)
         displayDebugLog("Desc Map: ${descMap}")
         if (descMap.cluster == "0000" && descMap.attrId == "0003")
         {
@@ -93,13 +94,6 @@ def parse(String description) {
         return createEvent(map)
     } else
         return [:]
-}
-
-def parseDescriptionAsMap(description) {
-    (description - "read attr - ").split(",").inject([:]) { map, param ->
-        def nameAndValue = param.split(":")
-        map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-    }
 }
 
 private def displayDebugLog(message) {
