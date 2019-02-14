@@ -1,6 +1,6 @@
 /**
  *
- *  Copyright 2018 gabriele-v
+ *  Copyright 2018-2019 gabriele-v
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  *  in compliance with the License. You may obtain a copy of the License at:
@@ -18,12 +18,13 @@
  *  0.2b (2018-12-23) => Add system mode support and cooling temperature
  *  0.3b (2018-12-23) => Skip wrong messages
  *  0.4b (2018-12-29) => Fix last change source reporting
- *  0.5b (2018-12-20) => Cleanup events removing isStateChange: true
+ *  0.5b (2018-12-30) => Cleanup events removing isStateChange: true
  *  0.6b (2019-01-27) => Change reporting to improve battery life
+ *  0.7b (2019-02-14) => Fix compatibility with Hubitat 2.0.5
  *
  *  Author: gabriele-v
  *
- *  Date: 2018-12-30
+ *  Date: 2019-02-14
  *
  *  Sources:
  *  Bitron 902010/32 Zigbee manual => https://images-eu.ssl-images-amazon.com/images/I/91ZbuTU-duS.pdf
@@ -76,7 +77,7 @@ def parse(String description) {
 	// sendEvent(name: "lastCheckin", value: now())
 	
 	if (description?.startsWith("read attr -")) {
-		def descMap = parseDescriptionAsMap(description)
+		def descMap = zigbee.parseDescriptionAsMap(description)
 		displayDebugLog("Desc Map: ${descMap}")
 		if (descMap.cluster == "0201" && descMap.attrId == "0000")
 		{
@@ -100,7 +101,7 @@ def parse(String description) {
 			displayDebugLog("RAW SW BUILD: ${descMap.value}")
 			map = [
 				name: 'swVer',
-				value: new String(descMap.value.decodeHex())
+				value: descMap.value
 			]
 		}
 		else if (descMap.cluster == "0000" && descMap.attrId == "0003")
@@ -256,13 +257,6 @@ def parse(String description) {
 		return createEvent(map)
 	} else
 		return [:]
-}
-
-def parseDescriptionAsMap(description) {
-	(description - "read attr - ").split(",").inject([:]) { map, param ->
-		def nameAndValue = param.split(":")
-		map += [(nameAndValue[0].trim()):nameAndValue[1].trim()]
-	}
 }
 
 private def displayDebugLog(message) {
