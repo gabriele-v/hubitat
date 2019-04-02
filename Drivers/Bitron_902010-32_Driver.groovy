@@ -13,7 +13,7 @@
  *
  *  Bitron 902010/32 Thermostat
  *
- *  Version: 0.6b
+ *  Version: 0.8b
  *  0.1b (2018-12-21) => First release
  *  0.2b (2018-12-23) => Add system mode support and cooling temperature
  *  0.3b (2018-12-23) => Skip wrong messages
@@ -21,6 +21,7 @@
  *  0.5b (2018-12-30) => Cleanup events removing isStateChange: true
  *  0.6b (2019-01-27) => Change reporting to improve battery life
  *  0.7b (2019-02-14) => Fix compatibility with Hubitat 2.0.5
+ *  0.8b (2019-03-31) => Fix cooling/fan capabilities
  *
  *  Author: gabriele-v
  *
@@ -143,8 +144,20 @@ def parse(String description) {
 		//After configure, some 0x0029 events with value 07122900000000 and size 14 are sent, skip them filtering on size
         else if (descMap.cluster == "0201" && descMap.attrId == "0029" && descMap.size != "14")
 		{
-			displayDebugLog("RAW THERMOSTAT RELAY STATE: ${descMap.value}")		
-			def retValue = (descMap.value == "0000") ? "idle" : "heating"
+			displayDebugLog("RAW THERMOSTAT RELAY STATE: ${descMap.value}")
+			def retValue
+			if (descMap.value == "0000")
+			{
+				retValue = "idle"
+			}
+			else if (thermostatMode == "heat")
+			{
+				retValue = "heating"
+			}
+			else if (thermostatMode == "cool")
+			{
+				retValue = "cooling"
+			}
 			map = [
 				name: "thermostatOperatingState",
 				value: retValue,
@@ -369,7 +382,7 @@ def decreaseHeatSetpoint()
 }
 
 //# thermostat.setThermostatMode capability
-void setThermostatMode(mode) {
+def setThermostatMode(mode) {
 	if (mode != null) {
 		displayInfoLog("Set thermostat mode to ${mode}")
 		def Value
@@ -384,14 +397,16 @@ void setThermostatMode(mode) {
 				Value = 0x04
 				break
 			default:
+				Value = 0x10
 				break
 		}
 
-		if($Value)
+		if(Value != 0x10)
 		{
 			sendEvent(name: 'thermostatMode', value: mode)
-			zigbee.writeAttribute(0x201, 0x001C, 0x30, Value)
-			zigbee.readAttribute(0x201, 0x001C)	//Read Mode
+			def cmds = zigbee.writeAttribute(0x201, 0x001C, 0x30, Value) +
+				zigbee.readAttribute(0x201, 0x001C) //Read Mode
+			return cmds
 		}
 		else
 		{
@@ -417,6 +432,9 @@ void cool() {
 }
 
 def configure() {
+	sendEvent(name: "supportedThermostatModes", value: ["off", "heat", "cool"])
+	sendEvent(name: "supportedThermostatFanModes", value: [])
+	
 	def cmds =
 		//Cluster ID (0x0201 = Thermostat Cluster), Attribute ID, Data Type, Payload (Min report, Max report, On change trigger)
 		zigbee.configureReporting(0x0201, 0x0000, 0x29, 30, 300, 50) +    //Attribute ID 0x0000 = local temperature, Data Type: S16BIT
@@ -446,7 +464,7 @@ def refresh() {
 		zigbee.readAttribute(0x201, 0x001C) +	//Read SystemMode
 	    zigbee.readAttribute(0x201, 0x0029)	+	//Read Relay Status
 		zigbee.readAttribute(0x201, 0x0030) +   //Read latest change source
-		zigbee.readAttribute(0x201, 0x0032)     //Read latest change date
+		zigbee.readAttribute(0x201, 0x0032) +   //Read latest change date
 		zigbee.readAttribute(0x204, 0x0001)	+	//Read KeypadLockout
 		zigbee.readAttribute(0x204, 0x0000) +   //Read unit format
 	
@@ -541,17 +559,5 @@ def updated() {
 		zigbee.readAttribute(0x204, 0x0000)
 
 	displayInfoLog("updated() --- cmds: $cmds")
-//	fireCommand(cmds)
     return cmds
-}
-
-private fireCommand(List commands) {
-	if (commands != null && commands.size() > 0)
-	{
-		log.trace("Executing commands:" + commands)
-		for (String value : commands)
-		{
-			sendHubCommand([value].collect {new hubitat.device.HubAction(it)})
-		}
-	}
 }
