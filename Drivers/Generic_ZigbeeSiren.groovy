@@ -13,12 +13,13 @@
  *
  *  Generic Zigbee Siren
  *
- *  Version: 0.1b
+ *  Version: 0.2b
  *  0.1b (2019-02-14) => First release
+ *  0.2b (2019-04-05) => Fix speech parameter without ending space
  *
  *  Author: gabriele-v
  *
- *  Date: 2019-02-14
+ *  Date: 2019-04-05
  *
  */
 
@@ -210,7 +211,8 @@ def findAndParseMessageValue(message, parameter, defValue) {
 		return defValue
 	}
 	def txtValue = message.substring(message.lastIndexOf(param) + param.length())
-	txtValue = txtValue.substring(0, txtValue.indexOf(" "))
+	def iEndValue = (txtValue.indexOf(" ") != -1) ? txtValue.indexOf(" ") : txtValue.length()
+	txtValue = txtValue.substring(0, iEndValue)
 	if(txtValue.isInteger()) {
 		def intValue = Integer.parseInt(txtValue)
 		displayDebugLog("'$parameter' value => intValue")
