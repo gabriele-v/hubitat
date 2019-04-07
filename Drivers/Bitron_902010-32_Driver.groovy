@@ -13,20 +13,21 @@
  *
  *  Bitron 902010/32 Thermostat
  *
- *  Version: 0.9b
- *  0.1b (2018-12-21) => First release
- *  0.2b (2018-12-23) => Add system mode support and cooling temperature
- *  0.3b (2018-12-23) => Skip wrong messages
- *  0.4b (2018-12-29) => Fix last change source reporting
- *  0.5b (2018-12-30) => Cleanup events removing isStateChange: true
- *  0.6b (2019-01-27) => Change reporting to improve battery life
- *  0.7b (2019-02-14) => Fix compatibility with Hubitat 2.0.5
- *  0.8b (2019-03-31) => Fix cooling/fan capabilities
- *  0.9b (2019-04-06) => Fix thermostatOperatingState parsing
+ *  Version: 0.10b
+ *  0.1b  (2018-12-21) => First release
+ *  0.2b  (2018-12-23) => Add system mode support and cooling temperature
+ *  0.3b  (2018-12-23) => Skip wrong messages
+ *  0.4b  (2018-12-29) => Fix last change source reporting
+ *  0.5b  (2018-12-30) => Cleanup events removing isStateChange: true
+ *  0.6b  (2019-01-27) => Change reporting to improve battery life
+ *  0.7b  (2019-02-14) => Fix compatibility with Hubitat 2.0.5
+ *  0.8b  (2019-03-31) => Fix cooling/fan capabilities
+ *  0.9b  (2019-04-06) => Fix thermostatOperatingState parsing
+ *  0.10b (2019-04-07) => Add trim for Dashboard sending modes with spaces
  *
  *  Author: gabriele-v
  *
- *  Date: 2019-04-06
+ *  Date: 2019-04-07
  *
  *  Sources:
  *  Bitron 902010/32 Zigbee manual => https://images-eu.ssl-images-amazon.com/images/I/91ZbuTU-duS.pdf
@@ -386,6 +387,7 @@ def decreaseHeatSetpoint()
 //# thermostat.setThermostatMode capability
 def setThermostatMode(mode) {
 	if (mode != null) {
+		mode = mode.trim()
 		displayInfoLog("Set thermostat mode to ${mode}")
 		def Value
 		switch(mode) {
