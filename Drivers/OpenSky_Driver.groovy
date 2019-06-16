@@ -13,8 +13,9 @@
  *
  *  OpenSky Network Driver
  *
- *  Version: 0.1b
+ *  Version: 0.2b
  *  0.1b  (2019-06-15) => First release
+ *  0.2b  (2019-06-16) => Add radius from Hubitat location
  *
  *  Author: gabriele-v
  *
@@ -97,10 +98,11 @@ metadata    {
         input "pollEvery", "enum", title:"Polling time", required:true, defaultValue:30, options:[0:"Manual", 10:"10 seconds", 20:"20 seconds", 30:"30 seconds", 60:"60 seconds"]
         input "APIusername", "text", title:"API Username (not mandatory)", required:false
         input "APIpassword", "password", title:"API Password (not mandatory)", required:false
-        input "LaMin", "double", title:"Lower bound for the latitude in decimal degrees", required:true
-        input "LaMax", "double", title:"Upper bound for the latitude in decimal degrees", required:true
-        input "LoMin", "double", title:"Lower bound for the longitude in decimal degrees", required:true
-        input "LoMax", "double", title:"Upper bound for the longitude in decimal degrees", required:true
+        input "radius", "decimal", title:"Detection radius in meters around your Hub location", required:false
+        input "LaMin", "decimal", title:"Lower bound for the latitude in decimal degrees (override radius)", required:false
+        input "LaMax", "decimal", title:"Upper bound for the latitude in decimal degrees (override radius)", required:false
+        input "LoMin", "decimal", title:"Lower bound for the longitude in decimal degrees (override radius)", required:false
+        input "LoMax", "decimal", title:"Upper bound for the longitude in decimal degrees (override radius)", required:false
         input "FlightFormat", "text", title:"Flight text format", required:true, defaultValue:"[callsign] - [baro_altitude] m - [velocity] kph - direction [true_track]°"
         input "Message1BeginWith", "text", title:"Message1 begin with", required:false, defaultValue:"A plane is coming above your head: "
         input "Message1Format", "text", title:"Message1 text format", required:true, defaultValue:"[callsign] flying at [baro_altitude] meters with a cruise speed of [velocity] kph with direction [true_track] degrees"
@@ -108,7 +110,7 @@ metadata    {
         input "Message2BeginWith", "text", title:"Message2 begin with", required:false, defaultValue:""
         input "Message2Format", "text", title:"Message2 text format", required:true, defaultValue:"[callsign] - [baro_altitude] m - [velocity] kph - direction [true_track]°"
         input "Message2Separator", "text", title:"Message2 separator characters", required:false, defaultValue:" | "
-        input name: "roundNumbers", type: "bool", title: "Round numbers to integers", defaultValue:true
+        input name: "roundNumbers", type: "bool", title: "Round resultin numbers to integers", defaultValue:true
         input name: "infoLogging", type: "bool", title: "Enable info message logging", defaultValue:false
  		input name: "debugLogging", type: "bool", title: "Enable debug message logging", defaultValue:false
     }
@@ -116,7 +118,17 @@ metadata    {
 }
 
 def updated()   {
-	unschedule()
+    unschedule()
+    
+    //Calculate boundaries
+    def LaRadius = radius / 111111
+    state.LaMin = LaMin != null ? LaMin : location.latitude - LaRadius
+    state.LaMax = LaMax != null ? LaMax : location.latitude + LaRadius
+    def LoRadiusMin = radius / (111111 * Math.cos(state.LaMin))
+    def LoRadiusMax = radius / (111111 * Math.cos(state.LaMax))
+    state.LoMin = LoMin != null ? LoMin : location.longitude - LoRadiusMin
+    state.LoMax = LoMax != null ? LoMax : location.longitude + LoRadiusMax
+
     poll()
     displayDebugLog("Scheduling poll every ${pollEvery} seconds")
     if(pollEvery != "0") {
@@ -127,7 +139,7 @@ def updated()   {
 def poll()      {
     displayDebugLog("OpenSky: Executing 'poll()'")
 
-    def obs = getOpenSkyAPI("states/all?lamin=${LaMin}&lomin=${LoMin}&lamax=${LaMax}&lomax=${LoMax}")
+    def obs = getOpenSkyAPI("states/all?lamin=${state.LaMin}&lomin=${state.LoMin}&lamax=${state.LaMax}&lomax=${state.LoMax}")
     if (!obs)   {
         log.warn "No response from OpenSky API"
         return
@@ -158,8 +170,9 @@ def poll()      {
             Message2 += Message2Separator ?: ""
         }
         
-        //convert mps to kph
-        flight[9] = flight[9] * 3.6
+        //Prettifying results
+        flight[1] = flight[1].trim()
+        flight[9] = flight[9] * 3.6 //convert mps to kph
         
         if(roundNumbers) {
             flight[7] = Math.round(flight[7])    //baro_altitude
