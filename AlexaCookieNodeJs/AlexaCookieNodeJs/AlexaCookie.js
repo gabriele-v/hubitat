@@ -18,6 +18,7 @@
 //    -------   ----        ---             ----
 //     v0.1.0   2019-01-02  Gabriele        Initial Version
 //     v0.1.1   2019-01-20  Gabriele        Update Alexa-Cookie to v2.0.1
+//     v0.1.2   2019-06-24  Gabriele        Update Alexa-Cookie to v2.1.0
 
 
 'use strict';

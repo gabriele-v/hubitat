@@ -46,6 +46,9 @@ Thank you for that work.
 
 ## Changelog:
 
+### 2.1.0
+* (Apollon77) Adjust to get CSRF from different URLs after changes from Amazon
+
 ### 2.0.1
 * (Apollon77) Fix refresh problem, hopefully
 
