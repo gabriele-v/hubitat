@@ -13,13 +13,14 @@
  *
  *  Generic Zigbee Siren
  *
- *  Version: 0.2b
+ *  Version: 0.3b
  *  0.1b (2019-02-14) => First release
  *  0.2b (2019-04-05) => Fix speech parameter without ending space
+ *  0.3b (2019-08-24) => Add option for last checkin
  *
  *  Author: gabriele-v
  *
- *  Date: 2019-04-05
+ *  Date: 2019-08-24
  *
  */
 
@@ -35,6 +36,7 @@ metadata {
 
         attribute "maxWarningDuration", "Integer"
         attribute "hwVer", "String"
+        attribute "lastCheckinTime", "Date"
 		
 		command "squawkArm"
 		command "squawkDisarm"
@@ -54,6 +56,7 @@ metadata {
 		input name: "defaultSquawkUseStrobe", type: "enum", title: "Default Squawk Strobe", options: [[0:"0 - No strobe"],[1:"1 - Use Strobe"]], defaultValue: 1, required: true
 		input name: "defaultSquawkLevel", type: "enum", title: "Default Squawk Level", options: [[0:"0 - Low"],[1:"1 - Medium"],[2:"2 - High"],[3:"3 - Very high"]], defaultValue: 1, required: true
         //Logging Message Config
+        input name: "lastCheckinEnable", type: "bool", title: "Enable custom date/time stamp events for lastCheckin", description: ""
         input name: "infoLogging", type: "bool", title: "Enable info message logging", description: ""
         input name: "debugLogging", type: "bool", title: "Enable debug message logging", description: ""
     }
@@ -63,6 +66,10 @@ metadata {
 def parse(String description) {
     displayDebugLog("Parsing message: ${description}")
     Map map = [:]
+    
+    if (lastCheckinEnable) {
+		sendEvent(name: "lastCheckinTime", value: new Date().toLocaleString())
+	}
     
     if (description?.startsWith("read attr -")) {
         def descMap = zigbee.parseDescriptionAsMap(description)
