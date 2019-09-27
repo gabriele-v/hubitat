@@ -34,7 +34,7 @@ require('linkifyjs/plugins/hashtag')(linkify);
 const linkifyHtml = require('linkifyjs/html');
 const uuidv4 = require('uuid/v4');
 
-const alexaCookie = require('./alexa-cookie/alexa-cookie');
+const alexaCookie = require('alexa-cookie2');
 const _DictRefOptions = {}
 
 // Load config
