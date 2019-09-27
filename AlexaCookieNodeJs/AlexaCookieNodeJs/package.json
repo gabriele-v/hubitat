@@ -5,6 +5,7 @@
   "main": "AlexaCookie.js",
   "author": "",
   "dependencies": {
+    "alexa-cookie2": "github:Apollon77/alexa-cookie",
     "body-parser": "^1.18.3",
     "cookie": "^0.3.1",
     "express": "^4.16.4",
