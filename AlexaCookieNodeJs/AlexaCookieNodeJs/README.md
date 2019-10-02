@@ -28,6 +28,7 @@ Empty username and empty password means no authentication required
 - Start the application with ```pm2 start AlexaCookie.js``` command
 - Execute command ```pm2 startup```
 - Execute command ```pm2 save```
+- Due to an issue still under investigation, looks like AlexaCookie.js must be restarted after getting succesfully 1 cookie, otherwise the second refresh won't work. To workaround it, schedule ```pm2 restart AlexaCookie.js``` with cron every day
 
 # Usage
 - Go to ```http://[serverip]:81```
